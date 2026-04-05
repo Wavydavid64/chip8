@@ -34,10 +34,29 @@ impl CPU {
         );
         match hex_vals {
             (0x0, 0x0, 0xe, 0x0) => Ok(Instruction::ClearScreen),
+            (0x0, 0x0, 0xe, 0xe) => Ok(Instruction::Return),
             (0x1, a, b, c) => {
                 let address = a << 8 | b << 4 | c;
                 Ok(Instruction::Jump(address as usize))
             }
+            (0x2, a, b, c) => {
+                let address = a << 8 | b << 4 | c;
+                Ok(Instruction::Call(address as usize))
+            }
+            (0x3, register, b, c) => {
+                let value = (b << 4 | c) as u8;
+                let register = register as usize;
+                Ok(Instruction::JumpIfVal { register, value })
+            }
+            (0x4, register, b, c) => {
+                let value = (b << 4 | c) as u8;
+                let register = register as usize;
+                Ok(Instruction::JumpIfNotVal { register, value })
+            }
+            (0x5, register_1, register_2, 0x0) => Ok(Instruction::JumpIfReg {
+                register_1: register_1 as usize,
+                register_2: register_2 as usize,
+            }),
             (0x6, register, b, c) => {
                 let register = register as u8;
                 let value = (b << 4 | c) as u8;
@@ -48,6 +67,10 @@ impl CPU {
                 let value = (b << 4 | c) as u8;
                 Ok(Instruction::Add { register, value })
             }
+            (0x9, register_1, register_2, 0x0) => Ok(Instruction::JumpIfNotReg {
+                register_1: register_1 as usize,
+                register_2: register_2 as usize,
+            }),
             (0xa, a, b, c) => {
                 let value: u16 = a << 8 | b << 4 | c;
                 Ok(Instruction::SetIndex(value as usize))
@@ -59,20 +82,60 @@ impl CPU {
             }),
             (a, b, c, d) => Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("Invalid Instuction Seen! (0x{a}{b}{c}{d})"),
+                format!("Invalid Instuction Seen! (0x{a:x}{b:x}{c:x}{d:x})"),
             )),
         }
     }
 
-    pub fn execute(&mut self, instruction: Instruction, display: &mut Display, memory: &Memory) {
+    pub fn execute(
+        &mut self,
+        instruction: Instruction,
+        display: &mut Display,
+        memory: &Memory,
+        stack: &mut Vec<usize>,
+    ) {
         match instruction {
             Instruction::ClearScreen => display.clear_screen(),
             Instruction::Jump(address) => self.program_counter = address,
+            Instruction::Call(address) => {
+                stack.push(self.program_counter);
+                self.program_counter = address;
+            }
+            Instruction::Return => {
+                self.program_counter = stack.pop().expect("Nothing in the stack!");
+            }
+            Instruction::JumpIfVal { register, value } => {
+                if self.variable_registers[register] == value {
+                    self.program_counter += 2
+                }
+            }
+            Instruction::JumpIfNotVal { register, value } => {
+                if self.variable_registers[register] != value {
+                    self.program_counter += 2
+                }
+            }
+            Instruction::JumpIfReg {
+                register_1,
+                register_2,
+            } => {
+                if self.variable_registers[register_1] == self.variable_registers[register_2] {
+                    self.program_counter += 2
+                }
+            }
+            Instruction::JumpIfNotReg {
+                register_1,
+                register_2,
+            } => {
+                if self.variable_registers[register_1] != self.variable_registers[register_2] {
+                    self.program_counter += 2
+                }
+            }
             Instruction::Set { register, value } => {
                 self.variable_registers[register as usize] = value
             }
             Instruction::Add { register, value } => {
-                self.variable_registers[register as usize] += value
+                self.variable_registers[register as usize] =
+                    self.variable_registers[register as usize].wrapping_add(value);
             }
             Instruction::SetIndex(value) => self.index_register = value,
             Instruction::Draw {
