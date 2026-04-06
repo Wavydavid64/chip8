@@ -14,7 +14,7 @@ use crate::renderer::Renderer;
 
 fn main() {
     let filepath = "/Users/david/Desktop/code/chip8/src/programs/test_opcode.ch8";
-    let mut cpu = CPU::new();
+    let mut cpu = CPU::new(false);
     let mut memory = Memory::new();
     let mut display = Display::new();
     let mut stack: Vec<usize> = Vec::new();
@@ -27,8 +27,8 @@ fn main() {
         println!("{instruction:x}");
         let instruction = cpu.decode(instruction).expect("Invalid instruction seen!");
         println!("{instruction:?}");
-        cpu.execute(instruction, &mut display, &memory, &mut stack);
+        cpu.execute(instruction, &mut display, &mut memory, &mut stack);
         renderer.update(&display);
-        sleep(Duration::from_millis(200));
+        sleep(Duration::from_millis(50));
     }
 }

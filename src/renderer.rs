@@ -1,4 +1,4 @@
-use crate::display::{self, DISPLAY_HEIGHT, DISPLAY_WIDTH, Display};
+use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH, Display};
 use minifb::{Key, Scale, Window, WindowOptions};
 
 pub const FRAME_RATE: usize = 60;
@@ -15,7 +15,7 @@ impl Renderer {
             DISPLAY_WIDTH,
             DISPLAY_HEIGHT,
             WindowOptions {
-                scale: Scale::X8,
+                scale: Scale::X16,
                 ..WindowOptions::default()
             },
         )
