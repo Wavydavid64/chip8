@@ -16,3 +16,6 @@ pub const FONT: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
+
+/// Number of bytes that each letter takes up.
+pub const CHARACTER_LEN: usize = 5;

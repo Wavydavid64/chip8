@@ -360,7 +360,7 @@ impl CPU {
         }
     }
 
-    pub fn decrement_timers_if_positive(&mut self) {
+    pub fn decrement_timers(&mut self) {
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
