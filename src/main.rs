@@ -16,7 +16,7 @@ use crate::keypad::Keypad;
 use crate::memory::Memory;
 use crate::renderer::{FRAME_RATE, Renderer};
 
-pub const CYCLES_PER_SECOND: usize = 800;
+pub const CYCLES_PER_SECOND: usize = 700;
 
 fn main() {
     let filepath = "/Users/david/Desktop/code/chip8/src/programs/chip8-test-suite/5-quirks.ch8";
@@ -33,18 +33,22 @@ fn main() {
     let mut timer_tick: Instant = Instant::now();
     let timer_rate = Duration::from_secs_f64(1.0 / (FRAME_RATE as f64));
 
-    let mut cycle_tick: Instant = Instant::now();
-    let cycle_rate = Duration::from_secs_f64(1.0 / (CYCLES_PER_SECOND as f64));
+    let cycles_per_frame = CYCLES_PER_SECOND / FRAME_RATE;
 
     while renderer.window_is_open() {
-        renderer.update_keys(&mut keypad);
-        let instruction = cpu.fetch(&memory);
-        let instruction = cpu.decode(instruction).expect("Invalid instruction seen!");
-        let regenerate_display =
-            cpu.execute(instruction, &mut display, &keypad, &mut memory, &mut stack);
-        // if regenerate_display {
-        //     renderer.update_display(&display);
-        // }
+        let start = Instant::now();
+        for _ in 0..cycles_per_frame {
+            renderer.update_keys(&mut keypad);
+            let instruction = cpu.fetch(&memory);
+            let instruction = cpu.decode(instruction).expect("Invalid instruction seen!");
+            let regenerate_display =
+                cpu.execute(instruction, &mut display, &keypad, &mut memory, &mut stack);
+            let time_elapsed = Instant::now() - start;
+            if regenerate_display && time_elapsed < timer_rate {
+                sleep(time_elapsed);
+                break;
+            }
+        }
         renderer.update_display(&display);
         if Instant::now() > timer_tick + timer_rate {
             cpu.decrement_timers();
@@ -56,12 +60,5 @@ fn main() {
         } else {
             audio.pause_tone();
         }
-        let time_used = Instant::now() - cycle_tick;
-        if time_used > cycle_rate {
-            eprintln!("Currently overruning the clock cycle! ({time_used:?} > {cycle_rate:?})")
-        } else {
-            sleep(cycle_rate - time_used);
-        }
-        cycle_tick = Instant::now()
     }
 }

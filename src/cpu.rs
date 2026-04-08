@@ -410,9 +410,7 @@ impl Cpu {
             }
             Instruction::SkipIfNotKey { register } => {
                 let key = self.variable_registers[register];
-                println!("KEY: {key}");
                 if !keypad.get_key(key as usize) {
-                    println!("SKIPPING: {key}");
                     self.program_counter += 2;
                 }
             }

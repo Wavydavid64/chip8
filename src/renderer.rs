@@ -69,6 +69,7 @@ impl Renderer {
                 self.window_buffer[buffer_index] = pixel_val;
             }
         }
+
         self.window
             .update_with_buffer(&self.window_buffer, DISPLAY_WIDTH, DISPLAY_HEIGHT)
             .expect("Failed to update window!");
@@ -78,9 +79,6 @@ impl Renderer {
         for (key_index, &key) in KEYS.iter().enumerate() {
             let is_pressed = self.window.is_key_down(key);
             keypad.set_key(key_index, is_pressed);
-            if (is_pressed) {
-                println!("KEY PRESSED: {key:?}");
-            }
         }
     }
 
