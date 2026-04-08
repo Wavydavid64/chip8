@@ -76,7 +76,7 @@ impl Renderer {
 
     pub fn update_keys(&mut self, keypad: &mut Keypad) {
         for (key_index, &key) in KEYS.iter().enumerate() {
-            let is_pressed = self.window.is_key_pressed(key, minifb::KeyRepeat::No);
+            let is_pressed = self.window.is_key_down(key);
             keypad.set_key(key_index, is_pressed);
             if (is_pressed) {
                 println!("KEY PRESSED: {key:?}");
