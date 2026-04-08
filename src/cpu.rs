@@ -256,15 +256,30 @@ impl Cpu {
             Instruction::Or {
                 register_1,
                 register_2,
-            } => self.variable_registers[register_1] |= self.variable_registers[register_2],
+            } => {
+                self.variable_registers[register_1] |= self.variable_registers[register_2];
+                if self.legacy_mode {
+                    self.variable_registers[15] = 0;
+                }
+            }
             Instruction::And {
                 register_1,
                 register_2,
-            } => self.variable_registers[register_1] &= self.variable_registers[register_2],
+            } => {
+                self.variable_registers[register_1] &= self.variable_registers[register_2];
+                if self.legacy_mode {
+                    self.variable_registers[15] = 0;
+                }
+            }
             Instruction::Xor {
                 register_1,
                 register_2,
-            } => self.variable_registers[register_1] ^= self.variable_registers[register_2],
+            } => {
+                self.variable_registers[register_1] ^= self.variable_registers[register_2];
+                if self.legacy_mode {
+                    self.variable_registers[15] = 0;
+                }
+            }
             Instruction::AddReg {
                 register_1,
                 register_2,
@@ -319,7 +334,7 @@ impl Cpu {
                 }
                 let reg_1_val = self.variable_registers[register_1];
                 self.variable_registers[register_1] = reg_1_val >> 1;
-                self.variable_registers[15] = (reg_1_val >> 7) & 1;
+                self.variable_registers[15] = reg_1_val & 1;
             }
             Instruction::ShiftLeft {
                 register_1,
@@ -331,6 +346,7 @@ impl Cpu {
                 let reg_1_val = self.variable_registers[register_1];
                 self.variable_registers[register_1] = reg_1_val << 1;
                 self.variable_registers[15] = reg_1_val & 1;
+                self.variable_registers[15] = (reg_1_val >> 7) & 1;
             }
             Instruction::SetIndex(value) => self.index_register = value,
             Instruction::StoreMemory { register } => {
@@ -394,7 +410,9 @@ impl Cpu {
             }
             Instruction::SkipIfNotKey { register } => {
                 let key = self.variable_registers[register];
+                println!("KEY: {key}");
                 if !keypad.get_key(key as usize) {
+                    println!("SKIPPING: {key}");
                     self.program_counter += 2;
                 }
             }

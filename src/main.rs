@@ -16,11 +16,11 @@ use crate::keypad::Keypad;
 use crate::memory::Memory;
 use crate::renderer::{FRAME_RATE, Renderer};
 
-pub const CYCLES_PER_SECOND: usize = 100;
+pub const CYCLES_PER_SECOND: usize = 800;
 
 fn main() {
-    let filepath = "/Users/david/Desktop/code/chip8/src/programs/chip8-test-rom-with-audio.ch8";
-    let mut cpu = Cpu::new(false);
+    let filepath = "/Users/david/Desktop/code/chip8/src/programs/chip8-test-suite/5-quirks.ch8";
+    let mut cpu = Cpu::new(true);
     let mut memory = Memory::new();
     let mut display = Display::new();
     let mut stack: Vec<usize> = Vec::new();
@@ -37,16 +37,15 @@ fn main() {
     let cycle_rate = Duration::from_secs_f64(1.0 / (CYCLES_PER_SECOND as f64));
 
     while renderer.window_is_open() {
+        renderer.update_keys(&mut keypad);
         let instruction = cpu.fetch(&memory);
-        println!("{instruction:x}");
         let instruction = cpu.decode(instruction).expect("Invalid instruction seen!");
-        println!("{instruction:?}");
         let regenerate_display =
             cpu.execute(instruction, &mut display, &keypad, &mut memory, &mut stack);
-        if regenerate_display {
-            renderer.update_display(&display);
-        }
-        renderer.update_keys(&mut keypad);
+        // if regenerate_display {
+        //     renderer.update_display(&display);
+        // }
+        renderer.update_display(&display);
         if Instant::now() > timer_tick + timer_rate {
             cpu.decrement_timers();
             timer_tick = Instant::now();
