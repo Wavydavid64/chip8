@@ -90,7 +90,22 @@ pub enum Instruction {
     DecimalConversion {
         register: usize,
     },
+    SkipIfKey {
+        register: usize,
+    },
+    SkipIfNotKey {
+        register: usize,
+    },
+    GetKey {
+        register: usize,
+    },
+    FontCharacter {
+        register: usize,
+    },
     SetIndex(usize),
+    AddIndex {
+        register: usize,
+    },
     Draw {
         x_register: u8,
         y_register: u8,

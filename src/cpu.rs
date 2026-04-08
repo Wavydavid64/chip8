@@ -1,12 +1,14 @@
 use std::io;
 
-use rand::{Rng, RngExt};
+use rand::RngExt;
 
+use crate::constants::font::CHARACTER_LEN;
 use crate::constants::instruction::Instruction;
 use crate::display::{DISPLAY_HEIGHT, DISPLAY_WIDTH, Display};
+use crate::keypad::Keypad;
 use crate::memory::{Memory, STARTING_ADDRESS};
 
-pub struct CPU {
+pub struct Cpu {
     program_counter: usize,
     variable_registers: [u8; 16],
     index_register: usize,
@@ -15,7 +17,7 @@ pub struct CPU {
     legacy_mode: bool,
 }
 
-impl CPU {
+impl Cpu {
     pub fn new(legacy_mode: bool) -> Self {
         Self {
             program_counter: STARTING_ADDRESS,
@@ -139,13 +141,28 @@ impl CPU {
                 y_register: y_register as u8,
                 height: height as u8,
             }),
+            (0xe, register, 0x9, 0xe) => Ok(Instruction::SkipIfKey {
+                register: register as usize,
+            }),
+            (0xe, register, 0xa, 0x1) => Ok(Instruction::SkipIfNotKey {
+                register: register as usize,
+            }),
             (0xf, register, 0x0, 0x7) => Ok(Instruction::SetRegToDT {
+                register: register as usize,
+            }),
+            (0xf, register, 0x0, 0xa) => Ok(Instruction::FontCharacter {
                 register: register as usize,
             }),
             (0xf, register, 0x1, 0x5) => Ok(Instruction::SetDTToReg {
                 register: register as usize,
             }),
             (0xf, register, 0x1, 0x8) => Ok(Instruction::SetSTToReg {
+                register: register as usize,
+            }),
+            (0xf, register, 0x1, 0xe) => Ok(Instruction::AddIndex {
+                register: register as usize,
+            }),
+            (0xf, register, 0x2, 0x9) => Ok(Instruction::FontCharacter {
                 register: register as usize,
             }),
             (0xf, register, 0x3, 0x3) => Ok(Instruction::DecimalConversion {
@@ -168,11 +185,16 @@ impl CPU {
         &mut self,
         instruction: Instruction,
         display: &mut Display,
+        keypad: &Keypad,
         memory: &mut Memory,
         stack: &mut Vec<usize>,
-    ) {
+    ) -> bool {
+        let mut regenerate_display = false;
         match instruction {
-            Instruction::ClearScreen => display.clear_screen(),
+            Instruction::ClearScreen => {
+                display.clear_screen();
+                regenerate_display = true;
+            }
             Instruction::Jump(address) => self.program_counter = address,
             Instruction::Call(address) => {
                 stack.push(self.program_counter);
@@ -341,6 +363,7 @@ impl CPU {
                 let sprite_address = self.index_register;
                 self.variable_registers[15] =
                     display.draw(x_coord, y_coord, height as usize, sprite_address, memory);
+                regenerate_display = true;
             }
             Instruction::DecimalConversion { register } => {
                 let reg_val = self.variable_registers[register];
@@ -357,7 +380,35 @@ impl CPU {
             Instruction::SetSTToReg { register } => {
                 self.sound_timer = self.variable_registers[register];
             }
+            Instruction::AddIndex { register } => {
+                self.index_register += self.variable_registers[register] as usize;
+                if !self.legacy_mode && self.index_register >= 0x1000 {
+                    self.variable_registers[register] = 1
+                };
+            }
+            Instruction::SkipIfKey { register } => {
+                let key = self.variable_registers[register];
+                if keypad.get_key(key as usize) {
+                    self.program_counter += 2;
+                }
+            }
+            Instruction::SkipIfNotKey { register } => {
+                let key = self.variable_registers[register];
+                if !keypad.get_key(key as usize) {
+                    self.program_counter += 2;
+                }
+            }
+            Instruction::GetKey { register } => {
+                if let Some(key) = keypad.get_any_pressed_key() {
+                    self.variable_registers[register] = key as u8;
+                }
+            }
+            Instruction::FontCharacter { register } => {
+                let character = self.variable_registers[register];
+                self.index_register = (character as usize) * CHARACTER_LEN;
+            }
         }
+        regenerate_display
     }
 
     pub fn decrement_timers(&mut self) {
