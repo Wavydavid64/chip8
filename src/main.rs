@@ -16,11 +16,12 @@ use crate::keypad::Keypad;
 use crate::memory::Memory;
 use crate::renderer::{FRAME_RATE, Renderer};
 
-pub const CYCLES_PER_SECOND: usize = 700;
+const CYCLES_PER_SECOND: usize = 700;
+const LEGACY_MODE: bool = true;
 
 fn main() {
-    let filepath = "/Users/david/Desktop/code/chip8/src/programs/chip8-test-suite/5-quirks.ch8";
-    let mut cpu = Cpu::new(true);
+    let filepath = "/Users/david/Desktop/code/chip8/src/programs/15puzzle.rom";
+    let mut cpu = Cpu::new(LEGACY_MODE);
     let mut memory = Memory::new();
     let mut display = Display::new();
     let mut stack: Vec<usize> = Vec::new();

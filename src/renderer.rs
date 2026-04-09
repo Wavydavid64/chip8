@@ -78,7 +78,7 @@ impl Renderer {
     pub fn update_keys(&mut self, keypad: &mut Keypad) {
         for (key_index, &key) in KEYS.iter().enumerate() {
             let is_pressed = self.window.is_key_down(key);
-            keypad.set_key(key_index, is_pressed);
+            keypad.set_key_state(key_index, is_pressed);
         }
     }
 

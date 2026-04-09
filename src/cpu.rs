@@ -150,7 +150,7 @@ impl Cpu {
             (0xf, register, 0x0, 0x7) => Ok(Instruction::SetRegToDT {
                 register: register as usize,
             }),
-            (0xf, register, 0x0, 0xa) => Ok(Instruction::FontCharacter {
+            (0xf, register, 0x0, 0xa) => Ok(Instruction::GetKey {
                 register: register as usize,
             }),
             (0xf, register, 0x1, 0x5) => Ok(Instruction::SetDTToReg {
@@ -404,19 +404,30 @@ impl Cpu {
             }
             Instruction::SkipIfKey { register } => {
                 let key = self.variable_registers[register];
-                if keypad.get_key(key as usize) {
+                if keypad.get_key_state(key as usize) {
                     self.program_counter += 2;
                 }
             }
             Instruction::SkipIfNotKey { register } => {
                 let key = self.variable_registers[register];
-                if !keypad.get_key(key as usize) {
+                if !keypad.get_key_state(key as usize) {
                     self.program_counter += 2;
                 }
             }
             Instruction::GetKey { register } => {
-                if let Some(key) = keypad.get_any_pressed_key() {
+                let get_key_func = |keypad: &Keypad| {
+                    if self.legacy_mode {
+                        keypad.get_any_released_key()
+                    } else {
+                        keypad.get_any_pressed_key()
+                    }
+                };
+                if let Some(key) = get_key_func(keypad) {
+                    println!("{key}");
                     self.variable_registers[register] = key as u8;
+                } else {
+                    // Decrement program counter to halt till key is pressed
+                    self.program_counter -= 2;
                 }
             }
             Instruction::FontCharacter { register } => {
